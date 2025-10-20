@@ -1,0 +1,28 @@
+# Python cache / temp
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.tmp
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Results and outputs
+results/
+*.csv
+*.xlsx
+*.npy
+*.pdf
+*.png
+*.jpeg
+
+# OS / editor files
+.DS_Store
+*.swp
+*.swo

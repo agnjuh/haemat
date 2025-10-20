@@ -1,0 +1,18 @@
+name: pbmc-ml
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - scanpy
+  - anndata
+  - seaborn
+  - openpyxl
+  - requests
+  - pip
+  - pip:
+      - mygene
