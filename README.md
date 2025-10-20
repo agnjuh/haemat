@@ -33,3 +33,5 @@ Cite:
 if you use this code in coursework or reports, please cite the repository:
 Juhasz, A. J. (2025). pbmc-haem-core: Machine learning-based classification of immune cell types in scRNA-seq data with gene-level interpretability and uncertainty analysis [Source code]. GitHub. https://github.com/agnjuh/haemat
 
+This repository is licensed under a custom All Rights Reserved license (see LICENSE file)
+
