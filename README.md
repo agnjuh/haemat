@@ -1,4 +1,4 @@
-Machine learning-based classification of immune cell types in scRNA-seq data (PBMC) with gene-level interpretability and uncertainty analysis
+# Machine learning-based classification of immune cell types in scRNA-seq data (PBMC) with gene-level interpretability and uncertainty analysis ![workflow](https://img.shields.io/badge/Development-Active-orange) ![status](https://img.shields.io/badge/Status-Work_in_progress-blue) ![status](https://img.shields.io/badge/Research-Prototype-red)
 
 Overview
 Core pipeline for PBMC scRNA-seq classification with:
