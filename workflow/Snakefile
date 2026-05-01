@@ -1,5 +1,6 @@
 rule all:
     input:
+        # main PBMC ML pipeline
         "results/metrics_summary.csv",
         "results/class_distribution.csv",
         "results/hvg_genes_train_only.csv",
@@ -21,11 +22,33 @@ rule all:
         "results/annotated_marker_table.xlsx",
         "results/top5_union_heatmap.csv",
         "results/plots/top5_union_heatmap.png",
-        "results/plots/top5_union_heatmap.pdf"
+        "results/plots/top5_union_heatmap.pdf",
+
+        # cross-dataset validation
+        "results/cross_dataset/metrics_cross_logreg.csv",
+        "results/cross_dataset/report_cross_logreg.txt",
+        "results/cross_dataset/confusion_cross_logreg.png",
+        "results/cross_dataset/hvg_genes_cross_dataset.csv",
+        "results/cross_dataset/proba.npy",
+        "results/cross_dataset/y_test.npy",
+        "results/cross_dataset/classes.npy",
+
+        # per-class thresholding
+        "results/cross_dataset/per_class_thresholds.csv",
+        "results/cross_dataset/per_class_pr_curves.csv",
+        "results/cross_dataset/accepted_confusion_matrix_per_class.csv",
+        "results/cross_dataset/summary_per_class.txt",
+
+        # decision layer
+        "results/cross_dataset/decision_table.csv",
+        "results/cross_dataset/decision_summary.txt"
+
 
 rule pbmc_ml_pipeline:
     input:
-        data="data/5k_pbmc_10x.h5ad"
+        data="data/5k_pbmc_10x.h5ad",
+        markers="markers_curated.csv",
+        script="scripts/run_pipeline.py"
     output:
         "results/metrics_summary.csv",
         "results/class_distribution.csv",
@@ -51,3 +74,60 @@ rule pbmc_ml_pipeline:
         "results/plots/top5_union_heatmap.pdf"
     shell:
         "python scripts/run_pipeline.py"
+
+
+rule prepare_pbmc3k:
+    input:
+        "data/filtered_gene_bc_matrices/hg19/matrix.mtx"
+    output:
+        "data/pbmc3k.h5ad"
+    shell:
+        "python scripts/prepare_pbmc3k.py"
+
+
+rule cross_dataset_logreg:
+    input:
+        train="data/5k_pbmc_10x.h5ad",
+        test="data/pbmc3k.h5ad",
+        markers="markers_curated.csv",
+        script="scripts/cross_dataset.py",
+        utils="scripts/pbmc_utils.py"
+    output:
+        "results/cross_dataset/metrics_cross_logreg.csv",
+        "results/cross_dataset/report_cross_logreg.txt",
+        "results/cross_dataset/confusion_cross_logreg.png",
+        "results/cross_dataset/hvg_genes_cross_dataset.csv",
+        "results/cross_dataset/proba.npy",
+        "results/cross_dataset/y_test.npy",
+        "results/cross_dataset/classes.npy"
+    shell:
+        "python scripts/cross_dataset.py"
+
+
+rule per_class_thresholds:
+    input:
+        proba="results/cross_dataset/proba.npy",
+        y_test="results/cross_dataset/y_test.npy",
+        classes="results/cross_dataset/classes.npy",
+        script="scripts/analyze_thresholds_per_class.py"
+    output:
+        "results/cross_dataset/per_class_thresholds.csv",
+        "results/cross_dataset/per_class_pr_curves.csv",
+        "results/cross_dataset/accepted_confusion_matrix_per_class.csv",
+        "results/cross_dataset/summary_per_class.txt"
+    shell:
+        "python scripts/analyze_thresholds_per_class.py --outdir results/cross_dataset --precision-target 0.95"
+
+
+rule decision_layer:
+    input:
+        proba="results/cross_dataset/proba.npy",
+        y_test="results/cross_dataset/y_test.npy",
+        classes="results/cross_dataset/classes.npy",
+        thresholds="results/cross_dataset/per_class_thresholds.csv",
+        script="scripts/decision_layer.py"
+    output:
+        "results/cross_dataset/decision_table.csv",
+        "results/cross_dataset/decision_summary.txt"
+    shell:
+        "python scripts/decision_layer.py"
