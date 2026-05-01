@@ -31,7 +31,7 @@ print("Train:", ad_tr)
 print("External test:", ad_te)
 
 # labels
-marker_sets = load_curated_csv("markers_curated.csv")
+marker_sets = load_curated_csv("markers_curated.csv", tiers=("core",))
 label_col_tr = assign_proxy_labels(ad_tr, marker_sets, out_col="cell_type")
 label_col_te = assign_proxy_labels(ad_te, marker_sets, out_col="cell_type")
 
@@ -52,7 +52,21 @@ try:
 except Exception:
     sc.pp.highly_variable_genes(ad_tr, n_top_genes=3000, flavor="cell_ranger")
 
-hvg = [g for g in ad_tr.var.index[ad_tr.var["highly_variable"]] if g in ad_te.var_names]
+# Keep train-derived HVGs, but force curated marker genes into the feature space.
+# This integrates biological prior knowledge without fitting feature selection on the test set.
+marker_genes = set(g for genes in marker_sets.values() for g in genes)
+
+hvg_train = [
+    g for g in ad_tr.var.index[ad_tr.var["highly_variable"]]
+    if g in ad_te.var_names
+]
+
+marker_genes_present = [
+    g for g in marker_genes
+    if g in ad_tr.var_names and g in ad_te.var_names
+]
+
+hvg = sorted(set(hvg_train).union(marker_genes_present))
 
 ad_tr = ad_tr[:, hvg].copy()
 ad_te = ad_te[:, hvg].copy()

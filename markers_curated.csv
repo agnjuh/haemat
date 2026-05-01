@@ -1,43 +1,40 @@
 cell_type,gene,tier,polarity,source,notes
-
-# T cells (lineage + naive markers)
+# T cells (core lineage),,,,,
 T,CD3D,core,positive,curated,TCR complex
 T,CD3E,core,positive,curated,TCR complex
 T,CD3G,core,positive,curated,TCR complex
 T,TRAC,core,positive,curated,TCR alpha
 T,CD2,core,positive,curated,adhesion
 T,LCK,core,positive,curated,signaling
+# T cells (state support),,,,,
 T,IL7R,extended,positive,curated,naive/memory
-T,CCR7,extended,positive,curated,homing
-T,TCF7,extended,positive,curated,naive T
-
-# B cells
-B,MS4A1,core,positive,curated,CD20
-B,CD79A,core,positive,curated,BCR
-B,CD79B,core,positive,curated,BCR
-B,CD74,extended,positive,curated,MHC-II invariant
-B,IGHM,extended,positive,curated,naive B
-
-# NK cells (cytotoxic program)
-NK,NKG7,core,positive,curated,cytotoxic
+T,CCR7,extended,positive,curated,naive T
+T,TCF7,extended,positive,curated,naive identity
+# NK cells (core identity — critical fix),,,,,
+NK,KLRD1,core,positive,curated,CD94 NK receptor
+NK,KLRF1,core,positive,curated,NK activation
+NK,KLRC1,core,positive,curated,NKG2A receptor
 NK,GNLY,core,positive,curated,granulysin
-NK,KLRD1,core,positive,curated,CD94
-NK,PRF1,extended,positive,curated,perforin
-NK,GZMB,extended,positive,curated,granzyme
-NK,FCGR3A,extended,positive,curated,CD16 NK
-
-# Monocytes (robust)
+NK,NKG7,core,positive,curated,cytotoxic granule
+NK,PRF1,core,positive,curated,perforin
+NK,GZMB,core,positive,curated,granzyme B
+NK,FCGR3A,core,positive,curated,CD16
+# B cells,,,,,
+B,MS4A1,core,positive,curated,CD20
+B,CD79A,core,positive,curated,BCR component
+B,CD79B,core,positive,curated,BCR component
+B,BANK1,extended,positive,curated,B cell signaling
+B,CD19,core,positive,curated,B lineage
+# Monocytes (tightened, less generic),,,,
 Mono,LYZ,core,positive,curated,lysozyme
-Mono,S100A8,core,positive,curated,inflammatory
-Mono,S100A9,core,positive,curated,inflammatory
-Mono,FCN1,extended,positive,curated,classical mono
-Mono,LST1,extended,positive,curated,myeloid
-
-# Dendritic cells (STRICT – avoid Mono overlap)
-DC,FCER1A,core,positive,curated,cDC
-
-# Platelets
-Platelet,PPBP,core,positive,curated,platelet factor
-Platelet,PF4,core,positive,curated,platelet
-Platelet,GP9,extended,positive,curated,receptor
-Platelet,ITGA2B,extended,positive,curated,CD41
+Mono,S100A8,core,positive,curated,inflammation
+Mono,S100A9,core,positive,curated,inflammation
+Mono,FCN1,core,positive,curated,classical mono
+Mono,CTSS,extended,positive,curated,antigen processing
+# Dendritic cells (fix: too weak before),,,,,
+# Platelet,,,,,
+Platelet,PPBP,core,positive,curated,platelet marker
+Platelet,PF4,core,positive,curated,platelet factor
+Platelet,GP9,core,positive,curated,platelet glycoprotein
+Platelet,ITGA2B,core,positive,curated,CD41
+DC,FCER1A,core,positive,curated,strict cDC marker; avoids Mono overlap
