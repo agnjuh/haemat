@@ -1,63 +1,78 @@
 import numpy as np
 import pandas as pd
-import os
 
-OUTDIR = "results/cross_dataset"
+# lineage definition
+LINEAGE_MAP = {
+    "lymphoid": ["T", "NK", "B"],
+    "myeloid": ["Mono", "DC"],
+    "platelet": ["Platelet"]
+}
 
-proba = np.load(os.path.join(OUTDIR, "proba.npy"))
-y_true = np.load(os.path.join(OUTDIR, "y_test.npy"), allow_pickle=True)
-classes = np.load(os.path.join(OUTDIR, "classes.npy"), allow_pickle=True)
+def main():
+    proba = np.load("results/cross_dataset/proba.npy")
+    y_true = np.load("results/cross_dataset/y_test.npy", allow_pickle=True)
+    classes = np.load("results/cross_dataset/classes.npy", allow_pickle=True)
 
-thresholds = pd.read_csv(os.path.join(OUTDIR, "per_class_thresholds.csv"))
+    df_thr = pd.read_csv("results/cross_dataset/per_class_thresholds.csv")
+    thr_map = dict(zip(df_thr["class"], df_thr["chosen_threshold"]))
 
-# map thresholds
-thr_map = dict(zip(thresholds["class"], thresholds["chosen_threshold"]))
+    class_to_idx = {c: i for i, c in enumerate(classes)}
 
-# predictions
-argmax_idx = proba.argmax(axis=1)
-y_pred = classes[argmax_idx]
-maxp = proba.max(axis=1)
+    decisions = []
 
-# decision
-y_decision = []
-accepted_mask = []
+    for i in range(len(y_true)):
+        p = proba[i]
 
-for i in range(len(y_pred)):
-    c = y_pred[i]
-    p = proba[i, argmax_idx[i]]
-    t = thr_map.get(c, 1.0)
+        # --- lineage scores ---
+        lineage_scores = {}
+        for lin, clist in LINEAGE_MAP.items():
+            idxs = [class_to_idx[c] for c in clist if c in class_to_idx]
+            lineage_scores[lin] = float(p[idxs].sum()) if idxs else 0.0
 
-    if p >= t:
-        y_decision.append(c)
-        accepted_mask.append(True)
-    else:
-        y_decision.append("Unknown")
-        accepted_mask.append(False)
+        best_lineage = max(lineage_scores, key=lineage_scores.get)
 
-y_decision = np.array(y_decision)
-accepted_mask = np.array(accepted_mask)
+        # --- restrict to lineage ---
+        candidates = LINEAGE_MAP[best_lineage]
+        best_class = None
+        best_prob = -1
 
-# save
-pd.DataFrame({
-    "true": y_true,
-    "pred": y_pred,
-    "decision": y_decision,
-    "accepted": accepted_mask,
-    "confidence": maxp
-}).to_csv(os.path.join(OUTDIR, "decision_table.csv"), index=False)
+        for c in candidates:
+            if c not in class_to_idx:
+                continue
+            ci = class_to_idx[c]
+            if p[ci] > best_prob:
+                best_prob = p[ci]
+                best_class = c
 
-# metrics
-coverage = accepted_mask.mean()
+        # --- threshold ---
+        t = thr_map.get(best_class, 1.0)
 
-if accepted_mask.sum() > 0:
-    acc = (y_true[accepted_mask] == y_pred[accepted_mask]).mean()
-else:
-    acc = np.nan
+        if best_prob >= t:
+            decision = best_class
+        else:
+            decision = "Unknown"
 
-with open(os.path.join(OUTDIR, "decision_summary.txt"), "w") as f:
-    f.write(f"Coverage: {coverage:.4f}\n")
-    f.write(f"Accuracy (accepted only): {acc:.4f}\n")
+        decisions.append({
+            "true": y_true[i],
+            "pred": classes[np.argmax(p)],
+            "decision": decision,
+            "max_proba": float(best_prob),
+            "lineage": best_lineage
+        })
 
-print("Decision layer applied.")
-print(f"Coverage: {coverage:.3f}")
-print(f"Accuracy: {acc:.3f}")
+    df = pd.DataFrame(decisions)
+    df.to_csv("results/cross_dataset/decision_table.csv", index=False)
+
+    acc = (df[df["decision"] != "Unknown"]["decision"] == df[df["decision"] != "Unknown"]["true"]).mean()
+    cov = (df["decision"] != "Unknown").mean()
+
+    with open("results/cross_dataset/decision_summary.txt", "w") as f:
+        f.write(f"Coverage: {cov:.4f}\n")
+        f.write(f"Accuracy: {acc:.4f}\n")
+
+    print("Decision layer (lineage-aware) applied.")
+    print(f"Coverage: {cov:.3f}")
+    print(f"Accuracy: {acc:.3f}")
+
+if __name__ == "__main__":
+    main()
