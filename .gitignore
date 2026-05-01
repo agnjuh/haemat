@@ -1,9 +1,11 @@
+
 # Python cache / temp
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 *.tmp
+cache/
 
 # Virtual environments
 .venv/
