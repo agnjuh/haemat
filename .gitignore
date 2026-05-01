@@ -5,24 +5,30 @@ __pycache__/
 *.pyd
 *.tmp
 
-# Virtual environment
+# Virtual environments
 .venv/
 env/
 venv/
 
-# Jupyter notebook checkpoints
+# Jupyter
 .ipynb_checkpoints/
 
-# Results and outputs
-results/
-*.csv
-*.xlsx
-*.npy
-*.pdf
-*.png
-*.jpeg
+# Snakemake
+.snakemake/
+*.log
 
-# OS / editor files
+# Data (raw input)
+data/
+
+# Results (pipeline outputs)
+results/
+
+# Large binary outputs
+*.npy
+
+# OS
 .DS_Store
+
+# Editor
 *.swp
 *.swo
