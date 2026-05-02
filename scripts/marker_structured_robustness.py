@@ -34,7 +34,7 @@ def main():
     results = []
 
     try:
-        # --- 1. core only ---
+        # 1. core only
         df_core = df[df["tier"] == "core"]
         df_core.to_csv(ORIG, index=False)
 
@@ -44,7 +44,7 @@ def main():
 
         results.append(evaluate("core_only"))
 
-        # --- 2. remove lineage markers ---
+        # 2. remove lineage markers
         lineage_genes = {
             "CD3D","CD3E","CD3G","TRAC",   # T
             "NKG7","GNLY",                # NK
@@ -61,7 +61,7 @@ def main():
 
         results.append(evaluate("no_lineage"))
 
-        # --- 3. remove state markers ---
+        # 3. remove state markers
         state_genes = {
             "IL7R","CCR7","TCF7"
         }

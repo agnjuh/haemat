@@ -24,6 +24,9 @@ rule all:
         "results/plots/top5_union_heatmap.png",
         "results/plots/top5_union_heatmap.pdf",
 
+        # external PBMC10k validation
+        "data/pbmc10k.h5ad",
+
         # cross-dataset validation
         "results/cross_dataset/metrics_cross_logreg.csv",
         "results/cross_dataset/report_cross_logreg.txt",
@@ -39,7 +42,7 @@ rule all:
         "results/cross_dataset/accepted_confusion_matrix_per_class.csv",
         "results/cross_dataset/summary_per_class.txt",
 
-        # lineage-aware decision layer
+        # lineage-aware uncertainty decision layer
         "results/cross_dataset/decision_table.csv",
         "results/cross_dataset/decision_summary.txt",
 
@@ -55,7 +58,19 @@ rule all:
         "results/hierarchical/within_lineage_model_summary.csv",
         "results/hierarchical/hierarchical_predictions.csv",
         "results/hierarchical/confusion_lineage_model.png",
-        "results/hierarchical/confusion_hierarchical_celltype.png"
+        "results/hierarchical/confusion_hierarchical_celltype.png",
+
+        # CellTypist benchmark and comparison plots
+        "results/celltypist_pbmc10k_labels.csv",
+        "results/celltypist_pbmc10k_mapped.csv",
+        "results/benchmark_plots/confusion_haemat_vs_proxy.png",
+        "results/benchmark_plots/confusion_celltypist_vs_proxy.png",
+        "results/benchmark_plots/agreement_by_proxy_class.csv",
+        "results/benchmark_plots/agreement_by_proxy_class.png",
+        "results/benchmark_plots/nk_failure_distribution.csv",
+        "results/benchmark_plots/nk_failure_comparison.png",
+        "results/benchmark_plots/entropy_correct_vs_incorrect.png",
+        "results/benchmark_plots/top2_gap_correct_vs_incorrect.png"
 
 
 rule pbmc_ml_pipeline:
@@ -99,10 +114,19 @@ rule prepare_pbmc3k:
         "python scripts/prepare_pbmc3k.py"
 
 
+rule prepare_pbmc10k:
+    input:
+        "data/external_pbmc/filtered_feature_bc_matrix/matrix.mtx.gz"
+    output:
+        "data/pbmc10k.h5ad"
+    shell:
+        "python scripts/prepare_pbmc10k.py"
+
+
 rule cross_dataset_logreg:
     input:
         train="data/5k_pbmc_10x.h5ad",
-        test="data/pbmc3k.h5ad",
+        test="data/pbmc10k.h5ad",
         markers="markers_curated.csv",
         script="scripts/cross_dataset.py",
         utils="scripts/pbmc_utils.py"
@@ -165,7 +189,7 @@ rule lineage_thresholds:
 rule hierarchical_models:
     input:
         train="data/5k_pbmc_10x.h5ad",
-        test="data/pbmc3k.h5ad",
+        test="data/pbmc10k.h5ad",
         markers="markers_curated.csv",
         script="scripts/hierarchical_models.py",
         utils="scripts/pbmc_utils.py"
@@ -180,9 +204,65 @@ rule hierarchical_models:
         "python scripts/hierarchical_models.py"
 
 
+rule benchmark_celltypist_pbmc10k:
+    input:
+        data="data/pbmc10k.h5ad",
+        script="scripts/benchmark_celltypist_pbmc10k.py"
+    output:
+        labels="results/celltypist_pbmc10k_labels.csv",
+        mapped="results/celltypist_pbmc10k_mapped.csv"
+    shell:
+        """
+        python scripts/benchmark_celltypist_pbmc10k.py
+
+        python - << 'PY'
+import pandas as pd
+
+df = pd.read_csv("results/celltypist_pbmc10k_labels.csv")
+
+def map_label(x):
+    x = str(x).lower()
+    if "b cell" in x or "plasma" in x:
+        return "B"
+    if "nk" in x:
+        return "NK"
+    if "t cell" in x or "mait" in x or "regulatory t" in x:
+        return "T"
+    if "mono" in x:
+        return "Mono"
+    if x.startswith("dc") or "dendritic" in x or "pdc" in x:
+        return "DC"
+    if "platelet" in x or "megakaryocyte" in x:
+        return "Platelet"
+    return "Unknown"
+
+df["mapped"] = df["celltypist_label"].apply(map_label)
+df.to_csv("results/celltypist_pbmc10k_mapped.csv", index=False)
+PY
+        """
+
+
+rule plot_benchmark_comparison:
+    input:
+        decision="results/cross_dataset/decision_table.csv",
+        celltypist="results/celltypist_pbmc10k_mapped.csv",
+        script="scripts/plot_benchmark_comparison.py"
+    output:
+        "results/benchmark_plots/confusion_haemat_vs_proxy.png",
+        "results/benchmark_plots/confusion_celltypist_vs_proxy.png",
+        "results/benchmark_plots/agreement_by_proxy_class.csv",
+        "results/benchmark_plots/agreement_by_proxy_class.png",
+        "results/benchmark_plots/nk_failure_distribution.csv",
+        "results/benchmark_plots/nk_failure_comparison.png",
+        "results/benchmark_plots/entropy_correct_vs_incorrect.png",
+        "results/benchmark_plots/top2_gap_correct_vs_incorrect.png"
+    shell:
+        "python scripts/plot_benchmark_comparison.py"
+
+
 # Optional stress-test targets.
-# These are intentionally not included in rule all because they rerun the
-# cross-dataset pipeline multiple times and are slower.
+# These rerun the cross-dataset pipeline multiple times and should be called explicitly.
+
 rule marker_robustness:
     input:
         markers="markers_curated.csv",

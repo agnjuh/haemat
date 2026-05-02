@@ -22,7 +22,7 @@ def _to_dense(x):
 
 # load
 ad_tr = sc.read_h5ad("data/5k_pbmc_10x.h5ad")
-ad_te = sc.read_h5ad("data/pbmc3k.h5ad")
+ad_te = sc.read_h5ad("data/pbmc10k.h5ad")
 
 ad_tr.var_names_make_unique()
 ad_te.var_names_make_unique()
