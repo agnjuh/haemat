@@ -8,7 +8,7 @@ adata = sc.read_10x_mtx(
 
 adata.var_names_make_unique()
 
-# basic preprocessing (same as in the haemat train-set!)
+# basic preprocessing (same as in the HAEMAT train-set!)
 sc.pp.normalize_total(adata, target_sum=1e4)
 sc.pp.log1p(adata)
 

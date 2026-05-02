@@ -63,7 +63,7 @@ rule all:
         # CellTypist benchmark and comparison plots
         "results/celltypist_pbmc10k_labels.csv",
         "results/celltypist_pbmc10k_mapped.csv",
-        "results/benchmark_plots/confusion_haemat_vs_proxy.png",
+        "results/benchmark_plots/confusion_HAEMAT_vs_proxy.png",
         "results/benchmark_plots/confusion_celltypist_vs_proxy.png",
         "results/benchmark_plots/agreement_by_proxy_class.csv",
         "results/benchmark_plots/agreement_by_proxy_class.png",
@@ -248,7 +248,7 @@ rule plot_benchmark_comparison:
         celltypist="results/celltypist_pbmc10k_mapped.csv",
         script="scripts/plot_benchmark_comparison.py"
     output:
-        "results/benchmark_plots/confusion_haemat_vs_proxy.png",
+        "results/benchmark_plots/confusion_HAEMAT_vs_proxy.png",
         "results/benchmark_plots/confusion_celltypist_vs_proxy.png",
         "results/benchmark_plots/agreement_by_proxy_class.csv",
         "results/benchmark_plots/agreement_by_proxy_class.png",

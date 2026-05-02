@@ -6,29 +6,29 @@ from sklearn.metrics import confusion_matrix
 OUTDIR = "results/benchmark_plots"
 os.makedirs(OUTDIR, exist_ok=True)
 
-haemat = pd.read_csv("results/cross_dataset/decision_table.csv")
+HAEMAT = pd.read_csv("results/cross_dataset/decision_table.csv")
 ct = pd.read_csv("results/celltypist_pbmc10k_mapped.csv")
 
-df = haemat.copy()
+df = HAEMAT.copy()
 df["celltypist"] = ct["mapped"].values
 
 labels = ["B", "DC", "Mono", "NK", "Platelet", "T"]
 
-# 1. True vs haemat decision
-cm_haemat = confusion_matrix(df["true"], df["decision"], labels=labels)
+# 1. True vs HAEMAT decision
+cm_HAEMAT = confusion_matrix(df["true"], df["decision"], labels=labels)
 plt.figure(figsize=(7, 6))
-plt.imshow(cm_haemat, aspect="auto")
+plt.imshow(cm_HAEMAT, aspect="auto")
 plt.colorbar(label="Count")
 plt.xticks(range(len(labels)), labels, rotation=45, ha="right")
 plt.yticks(range(len(labels)), labels)
-plt.xlabel("haemat decision")
+plt.xlabel("HAEMAT decision")
 plt.ylabel("Proxy truth")
-plt.title("haemat model vs proxy labels")
-for i in range(cm_haemat.shape[0]):
-    for j in range(cm_haemat.shape[1]):
-        plt.text(j, i, str(cm_haemat[i, j]), ha="center", va="center", fontsize=8)
+plt.title("HAEMAT model vs proxy labels")
+for i in range(cm_HAEMAT.shape[0]):
+    for j in range(cm_HAEMAT.shape[1]):
+        plt.text(j, i, str(cm_HAEMAT[i, j]), ha="center", va="center", fontsize=8)
 plt.tight_layout()
-plt.savefig(f"{OUTDIR}/confusion_haemat_vs_proxy.png", dpi=300)
+plt.savefig(f"{OUTDIR}/confusion_HAEMAT_vs_proxy.png", dpi=300)
 plt.close()
 
 # 2. True vs CellTypist
@@ -48,7 +48,7 @@ plt.tight_layout()
 plt.savefig(f"{OUTDIR}/confusion_celltypist_vs_proxy.png", dpi=300)
 plt.close()
 
-# 3. haemat decision vs CellTypist agreement
+# 3. HAEMAT decision vs CellTypist agreement
 agree = df["decision"] == df["celltypist"]
 agreement_summary = (
     df.assign(agree=agree)
@@ -64,7 +64,7 @@ plt.bar(agreement_summary["true"], agreement_summary["agreement_rate"])
 plt.ylim(0, 1)
 plt.ylabel("Agreement rate")
 plt.xlabel("Proxy class")
-plt.title("haemat model vs CellTypist agreement")
+plt.title("HAEMAT model vs CellTypist agreement")
 plt.tight_layout()
 plt.savefig(f"{OUTDIR}/agreement_by_proxy_class.png", dpi=300)
 plt.close()
@@ -72,12 +72,12 @@ plt.close()
 # 4. NK diagnostic: where true NK cells go
 nk = df[df["true"] == "NK"]
 
-nk_haemat = nk["decision"].value_counts().reindex(labels + ["Unknown"], fill_value=0)
+nk_HAEMAT = nk["decision"].value_counts().reindex(labels + ["Unknown"], fill_value=0)
 nk_ct = nk["celltypist"].value_counts().reindex(labels, fill_value=0)
 
 nk_summary = pd.DataFrame({
-    "haemat": nk_haemat,
-    "celltypist": nk_ct.reindex(nk_haemat.index, fill_value=0)
+    "HAEMAT": nk_HAEMAT,
+    "celltypist": nk_ct.reindex(nk_HAEMAT.index, fill_value=0)
 })
 nk_summary.to_csv(f"{OUTDIR}/nk_failure_distribution.csv")
 
@@ -85,7 +85,7 @@ x = range(len(nk_summary.index))
 width = 0.4
 
 plt.figure(figsize=(8, 4))
-plt.bar([i - width/2 for i in x], nk_summary["haemat"], width=width, label="haemat model")
+plt.bar([i - width/2 for i in x], nk_summary["HAEMAT"], width=width, label="HAEMAT model")
 plt.bar([i + width/2 for i in x], nk_summary["celltypist"], width=width, label="CellTypist")
 plt.xticks(list(x), nk_summary.index, rotation=45, ha="right")
 plt.ylabel("Number of true NK cells")
@@ -122,7 +122,7 @@ plt.close()
 
 print("Saved benchmark plots to:", OUTDIR)
 print("Saved:")
-print(f"{OUTDIR}/confusion_haemat_vs_proxy.png")
+print(f"{OUTDIR}/confusion_HAEMAT_vs_proxy.png")
 print(f"{OUTDIR}/confusion_celltypist_vs_proxy.png")
 print(f"{OUTDIR}/agreement_by_proxy_class.png")
 print(f"{OUTDIR}/nk_failure_comparison.png")
