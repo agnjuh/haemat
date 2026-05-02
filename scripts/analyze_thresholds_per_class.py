@@ -2,7 +2,7 @@
 """
 Per-class operating points for scRNA-seq classifier.
 
-Inputs expected in --outdir (produced by your pipeline):
+Inputs expected in --outdir (produced by haemat pipeline):
   - proba.npy      : (n_samples, n_classes) class probabilities
   - y_test.npy     : (n_samples,) true labels (dtype object/str)
   - classes.npy    : (n_classes,) class labels corresponding to proba columns
@@ -115,7 +115,7 @@ def main():
     for f in ["proba.npy","y_test.npy","classes.npy"]:
         if not os.path.exists(os.path.join(args.outdir, f)):
             raise SystemExit(
-                f"Missing {f} in {args.outdir}. Ensure your pipeline saved:\n"
+                f"Missing {f} in {args.outdir}. Ensure haemat pipeline saved:\n"
                 "  np.save('results/proba.npy', proba)\n"
                 "  np.save('results/y_test.npy', y_test)\n"
                 "  np.save('results/classes.npy', lr.classes_)\n"
