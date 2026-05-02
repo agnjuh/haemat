@@ -33,13 +33,13 @@ The pipeline includes:
 
 ---
 
-## Summary Figure
+## Summary figure
 
-![Summary](results/benchmark_plots/summary_figure.png)
+![Summary](figures/HAEMAT_summary_figure.png)
 
 ---
 
-## Key Results
+## Key results
 
 ### 1. Classification agreement by cell type
 
@@ -150,7 +150,7 @@ results/
 
 ---
 
-## Scope and Future Direction
+## Scope and future direction
 
 This repository focuses on rigorous evaluation and interpretability of PBMC cell type classification under dataset shift. Rather than treating classification errors only as technical failures, the analysis uses disagreement, uncertainty, and cell-type ambiguity as signals that may reveal biologically meaningful structure.
 
