@@ -39,9 +39,23 @@ rule all:
         "results/cross_dataset/accepted_confusion_matrix_per_class.csv",
         "results/cross_dataset/summary_per_class.txt",
 
-        # decision layer
+        # lineage-aware decision layer
         "results/cross_dataset/decision_table.csv",
-        "results/cross_dataset/decision_summary.txt"
+        "results/cross_dataset/decision_summary.txt",
+
+        # lineage-level threshold analysis
+        "results/cross_dataset/lineage_pr_curves.csv",
+        "results/cross_dataset/lineage_thresholds.csv",
+        "results/cross_dataset/lineage_decision_table.csv",
+        "results/cross_dataset/lineage_decision_summary.txt",
+
+        # experimental hierarchical classifier
+        "results/hierarchical/lineage_model_report.txt",
+        "results/hierarchical/hierarchical_celltype_report.txt",
+        "results/hierarchical/within_lineage_model_summary.csv",
+        "results/hierarchical/hierarchical_predictions.csv",
+        "results/hierarchical/confusion_lineage_model.png",
+        "results/hierarchical/confusion_hierarchical_celltype.png"
 
 
 rule pbmc_ml_pipeline:
@@ -131,3 +145,63 @@ rule decision_layer:
         "results/cross_dataset/decision_summary.txt"
     shell:
         "python scripts/decision_layer.py"
+
+
+rule lineage_thresholds:
+    input:
+        proba="results/cross_dataset/proba.npy",
+        y_test="results/cross_dataset/y_test.npy",
+        classes="results/cross_dataset/classes.npy",
+        script="scripts/lineage_thresholds.py"
+    output:
+        "results/cross_dataset/lineage_pr_curves.csv",
+        "results/cross_dataset/lineage_thresholds.csv",
+        "results/cross_dataset/lineage_decision_table.csv",
+        "results/cross_dataset/lineage_decision_summary.txt"
+    shell:
+        "python scripts/lineage_thresholds.py"
+
+
+rule hierarchical_models:
+    input:
+        train="data/5k_pbmc_10x.h5ad",
+        test="data/pbmc3k.h5ad",
+        markers="markers_curated.csv",
+        script="scripts/hierarchical_models.py",
+        utils="scripts/pbmc_utils.py"
+    output:
+        "results/hierarchical/lineage_model_report.txt",
+        "results/hierarchical/hierarchical_celltype_report.txt",
+        "results/hierarchical/within_lineage_model_summary.csv",
+        "results/hierarchical/hierarchical_predictions.csv",
+        "results/hierarchical/confusion_lineage_model.png",
+        "results/hierarchical/confusion_hierarchical_celltype.png"
+    shell:
+        "python scripts/hierarchical_models.py"
+
+
+# Optional stress-test targets.
+# These are intentionally not included in rule all because they rerun the
+# cross-dataset pipeline multiple times and are slower.
+rule marker_robustness:
+    input:
+        markers="markers_curated.csv",
+        script="scripts/marker_robustness.py",
+        cross_script="scripts/cross_dataset.py",
+        decision_script="scripts/decision_layer.py"
+    output:
+        "results/robustness/marker_robustness.csv"
+    shell:
+        "python scripts/marker_robustness.py"
+
+
+rule marker_structured_robustness:
+    input:
+        markers="markers_curated.csv",
+        script="scripts/marker_structured_robustness.py",
+        cross_script="scripts/cross_dataset.py",
+        decision_script="scripts/decision_layer.py"
+    output:
+        "results/robustness/marker_structured_robustness.csv"
+    shell:
+        "python scripts/marker_structured_robustness.py"
