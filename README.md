@@ -1,6 +1,5 @@
-# HAEMAT — Interpretable PBMC Cell Type Classification under Dataset Shift
-
-## Overview
+# HAEMAT: Cross-dataset immune cell classification and ambiguity analysis
+_A framework for uncertainty-aware analysis of immune cell states and diagnostic patterns_
 
 This repository implements an interpretable machine learning framework for cell type classification in single-cell RNA-seq (scRNA-seq) data, with a focus on cross-dataset generalisation and uncertainty-aware analysis.
 
