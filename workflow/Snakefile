@@ -70,7 +70,11 @@ rule all:
         "results/benchmark_plots/nk_failure_distribution.csv",
         "results/benchmark_plots/nk_failure_comparison.png",
         "results/benchmark_plots/entropy_correct_vs_incorrect.png",
-        "results/benchmark_plots/top2_gap_correct_vs_incorrect.png"
+        "results/benchmark_plots/top2_gap_correct_vs_incorrect.png",
+
+        # summary figure
+        "results/summary_figure/HAEMAT_summary_figure.png",
+        "results/summary_figure/HAEMAT_summary_figure.pdf"
 
 
 rule pbmc_ml_pipeline:
@@ -258,6 +262,22 @@ rule plot_benchmark_comparison:
         "results/benchmark_plots/top2_gap_correct_vs_incorrect.png"
     shell:
         "python scripts/plot_benchmark_comparison.py"
+
+
+rule summary_figure:
+    input:
+        "results/benchmark_plots/confusion_HAEMAT_vs_proxy.png",
+        "results/benchmark_plots/confusion_celltypist_vs_proxy.png",
+        "results/benchmark_plots/agreement_by_proxy_class.png",
+        "results/benchmark_plots/nk_failure_comparison.png",
+        "results/benchmark_plots/entropy_correct_vs_incorrect.png",
+        "results/plots/top5_union_heatmap.png",
+        script="scripts/make_summary_figure.py"
+    output:
+        "results/summary_figure/HAEMAT_summary_figure.png",
+        "results/summary_figure/HAEMAT_summary_figure.pdf"
+    shell:
+        "python scripts/make_summary_figure.py"
 
 
 # Optional stress-test targets.

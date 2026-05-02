@@ -1,37 +1,166 @@
-# Machine learning-based classification of immune cell types in scRNA-seq data (PBMC) with gene-level interpretability and uncertainty analysis ![workflow](https://img.shields.io/badge/Development-Active-orange)
+# HAEMAT — Interpretable PBMC Cell Type Classification under Dataset Shift
 
-Overview
-Core pipeline for PBMC scRNA-seq classification with:
-	•	leak-free train/test split and preprocessing,
-	•	proxy labels (Leiden + curated marker scoring) when annotations are missing,
-	•	three baseline models (kNN, multinomial LR, Random Forest),
-	•	gene-level interpretability (PCA back-projection; technical genes filtered),
-	•	uncertainty analysis (coverage–accuracy, calibration curve, Brier score),
-	•	optional per-class probability thresholds.
+## Overview
 
-Repository layout:
-	•	run_pipeline.py — main pipeline (reads data/5k_pbmc_10x.h5ad, optional markers_curated.csv, writes to results/).
-	•	analyze_thresholds_per_class.py — finds class-specific probability thresholds from results/ arrays.
-	•	environment.yml — conda environment spec.
-	•	.gitignore
+This repository implements an interpretable machine learning framework for cell type classification in single-cell RNA-seq (scRNA-seq) data, with a focus on cross-dataset generalisation and uncertainty-aware analysis.
 
-Requirements:
-	•	Python 3.10+ (tested with 3.13)
-	•	Conda or mamba (recommended)
+The workflow is designed to evaluate how well a model trained on one PBMC dataset transfers to another independent dataset, while explicitly analysing prediction uncertainty and systematic failure modes.
 
-Environment:
-conda env create -f environment.yml
-conda activate pbmc-ml
+---
 
-Data: place the 10x 5k PBMC .h5ad at: data/5k_pbmc_10x.h5ad
+## Data
 
-Notes:
-	•	All preprocessing that can leak information (HVGs, scaling, PCA) is fitted on train only and applied to test.
-	•	Gene-level summaries filter generic signals (HLA-, ribosomal RPL/RPS, mitochondrial MT-) to improve interpretability.
+- Training dataset: PBMC 5k (10x Genomics)
+- External validation dataset: PBMC 10k (10x Genomics)
 
-Cite:
-if you use this code in coursework or reports, please cite the repository:
-Juhasz, A. J. (2025). pbmc-haem-core: Machine learning-based classification of immune cell types in scRNA-seq data with gene-level interpretability and uncertainty analysis [Source code]. GitHub. https://github.com/agnjuh/haemat
+Cell identities in the validation dataset are treated as **proxy labels**.  
+These labels are used as a reference for evaluation but are not assumed to be perfectly accurate ground truth.
 
-This repository is licensed under a custom All Rights Reserved license (see LICENSE file)
+---
+
+## Methods
+
+The pipeline includes:
+
+- Logistic regression classifier (L1-regularised)
+- Marker-informed feature space
+- Cross-dataset evaluation (train on PBMC5k → test on PBMC10k)
+- Uncertainty quantification:
+  - Entropy
+  - Top-2 probability gap
+- Post hoc decision layer
+- Benchmark comparison with CellTypist
+- Gene-level interpretability (L1 coefficients)
+
+---
+
+## Summary Figure
+
+![Summary](results/benchmark_plots/summary_figure.png)
+
+---
+
+## Key Results
+
+### 1. Classification agreement by cell type
+
+Agreement between HAEMAT predictions and proxy labels:
+
+| Cell type | Agreement rate |
+|----------|----------------|
+| B        | 0.985 |
+| DC       | 0.895 |
+| Mono     | 0.972 |
+| NK       | 0.585 |
+| Platelet | 0.844 |
+| T        | 0.993 |
+
+Performance is high for most lineages, while NK cells show substantially lower agreement.
+
+---
+
+### 2. NK cell misclassification patterns
+
+True NK cells are distributed across multiple predicted classes:
+
+- NK → NK: 551  
+- NK → Platelet: 609  
+- NK → Monocyte: 383  
+- NK → T: 59  
+
+This indicates a systematic ambiguity between NK cells and other immune populations, particularly platelets and monocytes.
+
+A similar pattern is observed in CellTypist, suggesting that this reflects biological or representation-level overlap rather than a model-specific issue.
+
+---
+
+### 3. Comparison with CellTypist
+
+Both HAEMAT and CellTypist show:
+
+- Strong performance for B cells, T cells, and monocytes
+- Reduced agreement for NK cells
+
+The consistency of these patterns across models indicates that the main limitations arise from dataset characteristics rather than implementation details.
+
+---
+
+### 4. Uncertainty under dataset shift
+
+Prediction entropy differs between correct and incorrect predictions:
+
+- Correct predictions are concentrated at low entropy
+- Incorrect predictions show broader and higher entropy distribution
+
+This demonstrates that uncertainty metrics provide meaningful signals of prediction reliability under domain shift.
+
+---
+
+### 5. Gene-level interpretability
+
+The model identifies biologically meaningful marker genes:
+
+- B cells: MS4A1, BANK1, CD79A  
+- Dendritic cells: FCER1A, CLEC10A, CD1C  
+- Monocytes: S100A8, AIF1  
+
+This confirms that the classifier captures lineage-specific transcriptional programs.
+
+---
+
+## Interpretation
+
+The results show that:
+
+- Cell type classification generalises well across datasets for major lineages
+- NK cells represent a consistent failure mode across independent models
+- Prediction uncertainty correlates with classification correctness
+- Interpretable models retain biologically relevant signal under domain shift
+
+---
+
+## Reproducibility
+
+The full workflow is implemented in Snakemake:
+
+```bash
+snakemake --cores 4
+```
+
+---
+
+## Repository Structure
+
+```
+workflow/
+    Snakefile
+
+scripts/
+    run_pipeline.py
+    cross_dataset.py
+    decision_layer.py
+    analyze_thresholds_per_class.py
+    plot_benchmark_comparison.py
+    hierarchical_models.py
+
+results/
+    benchmark_plots/
+    cross_dataset/
+    hierarchical/
+```
+
+---
+
+## Scope and Future Direction
+
+This repository focuses on rigorous evaluation and interpretability of PBMC cell type classification under dataset shift. Rather than treating classification errors only as technical failures, the analysis uses disagreement, uncertainty, and cell-type ambiguity as signals that may reveal biologically meaningful structure.
+
+A key future direction is to extend this framework to disease-associated PBMC datasets and ask:
+
+- whether immune cell composition differs systematically between disease groups
+- whether ambiguous or transitional cell states are enriched in specific conditions
+- whether uncertainty-aware cell type profiles can improve predictive modelling
+- whether cytotoxic, myeloid, or platelet-associated signatures contribute to disease stratification
+
+In this sense, HAEMAT is intended as a foundation for interpretable immune profiling, where classification outputs are not only labels, but structured features for downstream biological and predictive analysis.
 
