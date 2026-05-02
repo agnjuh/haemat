@@ -34,3 +34,10 @@ results/
 # Editor
 *.swp
 *.swo
+
+# large data / downloads
+filtered_feature_bc_matrix/
+*.tar.gz
+
+# local temp
+replacements.txt
