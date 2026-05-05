@@ -42,17 +42,17 @@ rule all:
         "results/cross_dataset/accepted_confusion_matrix_per_class.csv",
         "results/cross_dataset/summary_per_class.txt",
 
-        # lineage-aware uncertainty decision layer
+        # decision layer
         "results/cross_dataset/decision_table.csv",
         "results/cross_dataset/decision_summary.txt",
 
-        # lineage-level threshold analysis
+        # lineage thresholds
         "results/cross_dataset/lineage_pr_curves.csv",
         "results/cross_dataset/lineage_thresholds.csv",
         "results/cross_dataset/lineage_decision_table.csv",
         "results/cross_dataset/lineage_decision_summary.txt",
 
-        # experimental hierarchical classifier
+        # hierarchical
         "results/hierarchical/lineage_model_report.txt",
         "results/hierarchical/hierarchical_celltype_report.txt",
         "results/hierarchical/within_lineage_model_summary.csv",
@@ -60,9 +60,11 @@ rule all:
         "results/hierarchical/confusion_lineage_model.png",
         "results/hierarchical/confusion_hierarchical_celltype.png",
 
-        # CellTypist benchmark and comparison plots
+        # CellTypist
         "results/celltypist_pbmc10k_labels.csv",
         "results/celltypist_pbmc10k_mapped.csv",
+
+        # benchmark plots
         "results/benchmark_plots/confusion_HAEMAT_vs_proxy.png",
         "results/benchmark_plots/confusion_celltypist_vs_proxy.png",
         "results/benchmark_plots/agreement_by_proxy_class.csv",
@@ -74,234 +76,102 @@ rule all:
 
         # summary figure
         "results/summary_figure/HAEMAT_summary_figure.png",
-        "results/summary_figure/HAEMAT_summary_figure.pdf"
+        "results/summary_figure/HAEMAT_summary_figure.pdf",
+
+        # program scores
+        "results/program_scores/program_scores.csv",
+        "results/program_scores/program_score_summary.csv",
+
+        # transitional states
+        "results/transitional_states/transitional_state_table.csv",
+        "results/transitional_states/transitional_summary.csv",
+        "results/transitional_states/transitional_by_decision.csv",
+        "results/transitional_states/transitional_by_true.csv",
+        "results/transitional_states/transitional_state_counts.png",
+        "results/transitional_states/ambiguity_landscape.png",
+        "results/transitional_states/decision_by_transitional_state.png",
+
+        # program ↔ state analysis
+        "results/transitional_states/mean_program_scores_by_state.csv",
+        "results/transitional_states/program_scores_by_transitional_state.png",
+        "results/transitional_states/program_scores_by_transitional_state_focused.png",
+
+        # sample-level features
+        "results/sample_level/sample_features.csv",
+
+        # transitional summary figure
+        "results/transitional_states/transitional_summary_figure.png",
+        "results/transitional_states/transitional_summary_figure.pdf"
 
 
-rule pbmc_ml_pipeline:
-    input:
-        data="data/5k_pbmc_10x.h5ad",
-        markers="markers_curated.csv",
-        script="scripts/run_pipeline.py"
-    output:
-        "results/metrics_summary.csv",
-        "results/class_distribution.csv",
-        "results/hvg_genes_train_only.csv",
-        "results/confusion_knn.png",
-        "results/confusion_logreg.png",
-        "results/confusion_rf.png",
-        "results/report_knn.txt",
-        "results/report_logreg.txt",
-        "results/report_rf.txt",
-        "results/top_genes_summary.csv",
-        "results/coverage_accuracy.png",
-        "results/calibration_curve.png",
-        "results/calibration_stats.txt",
-        "results/proba.npy",
-        "results/y_test.npy",
-        "results/classes.npy",
-        "results/top_genes_summary_geneLR.csv",
-        "results/top_genes_annotated.csv",
-        "results/annotated_marker_table.xlsx",
-        "results/top5_union_heatmap.csv",
-        "results/plots/top5_union_heatmap.png",
-        "results/plots/top5_union_heatmap.pdf"
-    shell:
-        "python scripts/run_pipeline.py"
-
-
-rule prepare_pbmc3k:
-    input:
-        "data/filtered_gene_bc_matrices/hg19/matrix.mtx"
-    output:
-        "data/pbmc3k.h5ad"
-    shell:
-        "python scripts/prepare_pbmc3k.py"
-
-
-rule prepare_pbmc10k:
-    input:
-        "data/external_pbmc/filtered_feature_bc_matrix/matrix.mtx.gz"
-    output:
-        "data/pbmc10k.h5ad"
-    shell:
-        "python scripts/prepare_pbmc10k.py"
-
-
-rule cross_dataset_logreg:
-    input:
-        train="data/5k_pbmc_10x.h5ad",
-        test="data/pbmc10k.h5ad",
-        markers="markers_curated.csv",
-        script="scripts/cross_dataset.py",
-        utils="scripts/pbmc_utils.py"
-    output:
-        "results/cross_dataset/metrics_cross_logreg.csv",
-        "results/cross_dataset/report_cross_logreg.txt",
-        "results/cross_dataset/confusion_cross_logreg.png",
-        "results/cross_dataset/hvg_genes_cross_dataset.csv",
-        "results/cross_dataset/proba.npy",
-        "results/cross_dataset/y_test.npy",
-        "results/cross_dataset/classes.npy"
-    shell:
-        "python scripts/cross_dataset.py"
-
-
-rule per_class_thresholds:
-    input:
-        proba="results/cross_dataset/proba.npy",
-        y_test="results/cross_dataset/y_test.npy",
-        classes="results/cross_dataset/classes.npy",
-        script="scripts/analyze_thresholds_per_class.py"
-    output:
-        "results/cross_dataset/per_class_thresholds.csv",
-        "results/cross_dataset/per_class_pr_curves.csv",
-        "results/cross_dataset/accepted_confusion_matrix_per_class.csv",
-        "results/cross_dataset/summary_per_class.txt"
-    shell:
-        "python scripts/analyze_thresholds_per_class.py --outdir results/cross_dataset --precision-target 0.95"
-
-
-rule decision_layer:
-    input:
-        proba="results/cross_dataset/proba.npy",
-        y_test="results/cross_dataset/y_test.npy",
-        classes="results/cross_dataset/classes.npy",
-        thresholds="results/cross_dataset/per_class_thresholds.csv",
-        script="scripts/decision_layer.py"
-    output:
-        "results/cross_dataset/decision_table.csv",
-        "results/cross_dataset/decision_summary.txt"
-    shell:
-        "python scripts/decision_layer.py"
-
-
-rule lineage_thresholds:
-    input:
-        proba="results/cross_dataset/proba.npy",
-        y_test="results/cross_dataset/y_test.npy",
-        classes="results/cross_dataset/classes.npy",
-        script="scripts/lineage_thresholds.py"
-    output:
-        "results/cross_dataset/lineage_pr_curves.csv",
-        "results/cross_dataset/lineage_thresholds.csv",
-        "results/cross_dataset/lineage_decision_table.csv",
-        "results/cross_dataset/lineage_decision_summary.txt"
-    shell:
-        "python scripts/lineage_thresholds.py"
-
-
-rule hierarchical_models:
-    input:
-        train="data/5k_pbmc_10x.h5ad",
-        test="data/pbmc10k.h5ad",
-        markers="markers_curated.csv",
-        script="scripts/hierarchical_models.py",
-        utils="scripts/pbmc_utils.py"
-    output:
-        "results/hierarchical/lineage_model_report.txt",
-        "results/hierarchical/hierarchical_celltype_report.txt",
-        "results/hierarchical/within_lineage_model_summary.csv",
-        "results/hierarchical/hierarchical_predictions.csv",
-        "results/hierarchical/confusion_lineage_model.png",
-        "results/hierarchical/confusion_hierarchical_celltype.png"
-    shell:
-        "python scripts/hierarchical_models.py"
-
-
-rule benchmark_celltypist_pbmc10k:
+rule program_scoring:
     input:
         data="data/pbmc10k.h5ad",
-        script="scripts/benchmark_celltypist_pbmc10k.py"
+        script="scripts/program_scoring.py"
     output:
-        labels="results/celltypist_pbmc10k_labels.csv",
-        mapped="results/celltypist_pbmc10k_mapped.csv"
+        scores="results/program_scores/program_scores.csv",
+        summary="results/program_scores/program_score_summary.csv"
     shell:
-        """
-        python scripts/benchmark_celltypist_pbmc10k.py
-
-        python - << 'PY'
-import pandas as pd
-
-df = pd.read_csv("results/celltypist_pbmc10k_labels.csv")
-
-def map_label(x):
-    x = str(x).lower()
-    if "b cell" in x or "plasma" in x:
-        return "B"
-    if "nk" in x:
-        return "NK"
-    if "t cell" in x or "mait" in x or "regulatory t" in x:
-        return "T"
-    if "mono" in x:
-        return "Mono"
-    if x.startswith("dc") or "dendritic" in x or "pdc" in x:
-        return "DC"
-    if "platelet" in x or "megakaryocyte" in x:
-        return "Platelet"
-    return "Unknown"
-
-df["mapped"] = df["celltypist_label"].apply(map_label)
-df.to_csv("results/celltypist_pbmc10k_mapped.csv", index=False)
-PY
-        """
+        "python scripts/program_scoring.py"
 
 
-rule plot_benchmark_comparison:
+rule transitional_state_detection:
     input:
         decision="results/cross_dataset/decision_table.csv",
-        celltypist="results/celltypist_pbmc10k_mapped.csv",
-        script="scripts/plot_benchmark_comparison.py"
+        scores="results/program_scores/program_scores.csv",
+        script="scripts/transitional_state_detection.py"
     output:
-        "results/benchmark_plots/confusion_HAEMAT_vs_proxy.png",
-        "results/benchmark_plots/confusion_celltypist_vs_proxy.png",
-        "results/benchmark_plots/agreement_by_proxy_class.csv",
-        "results/benchmark_plots/agreement_by_proxy_class.png",
-        "results/benchmark_plots/nk_failure_distribution.csv",
-        "results/benchmark_plots/nk_failure_comparison.png",
-        "results/benchmark_plots/entropy_correct_vs_incorrect.png",
-        "results/benchmark_plots/top2_gap_correct_vs_incorrect.png"
+        table="results/transitional_states/transitional_state_table.csv",
+        summary="results/transitional_states/transitional_summary.csv",
+        by_decision="results/transitional_states/transitional_by_decision.csv",
+        by_true="results/transitional_states/transitional_by_true.csv"
     shell:
-        "python scripts/plot_benchmark_comparison.py"
+        "python scripts/transitional_state_detection.py"
 
 
-rule summary_figure:
+rule plot_transitional_states:
     input:
-        "results/benchmark_plots/confusion_HAEMAT_vs_proxy.png",
-        "results/benchmark_plots/confusion_celltypist_vs_proxy.png",
-        "results/benchmark_plots/agreement_by_proxy_class.png",
-        "results/benchmark_plots/nk_failure_comparison.png",
-        "results/benchmark_plots/entropy_correct_vs_incorrect.png",
-        "results/plots/top5_union_heatmap.png",
-        script="scripts/make_summary_figure.py"
+        table="results/transitional_states/transitional_state_table.csv",
+        script="scripts/plot_transitional_states.py"
     output:
-        "results/summary_figure/HAEMAT_summary_figure.png",
-        "results/summary_figure/HAEMAT_summary_figure.pdf"
+        counts="results/transitional_states/transitional_state_counts.png",
+        landscape="results/transitional_states/ambiguity_landscape.png",
+        heatmap="results/transitional_states/decision_by_transitional_state.png"
     shell:
-        "python scripts/make_summary_figure.py"
+        "python scripts/plot_transitional_states.py"
 
 
-# Optional stress-test targets.
-# These rerun the cross-dataset pipeline multiple times and should be called explicitly.
-
-rule marker_robustness:
+rule program_scores_by_state:
     input:
-        markers="markers_curated.csv",
-        script="scripts/marker_robustness.py",
-        cross_script="scripts/cross_dataset.py",
-        decision_script="scripts/decision_layer.py"
+        table="results/transitional_states/transitional_state_table.csv",
+        script="scripts/plot_program_scores_by_state.py"
     output:
-        "results/robustness/marker_robustness.csv"
+        mean_scores="results/transitional_states/mean_program_scores_by_state.csv",
+        heatmap="results/transitional_states/program_scores_by_transitional_state.png",
+        focused_heatmap="results/transitional_states/program_scores_by_transitional_state_focused.png"
     shell:
-        "python scripts/marker_robustness.py"
+        "python scripts/plot_program_scores_by_state.py"
 
 
-rule marker_structured_robustness:
+rule build_sample_features:
     input:
-        markers="markers_curated.csv",
-        script="scripts/marker_structured_robustness.py",
-        cross_script="scripts/cross_dataset.py",
-        decision_script="scripts/decision_layer.py"
+        table="results/transitional_states/transitional_state_table.csv",
+        script="scripts/build_sample_features.py"
     output:
-        "results/robustness/marker_structured_robustness.csv"
+        features="results/sample_level/sample_features.csv"
     shell:
-        "python scripts/marker_structured_robustness.py"
+        "python scripts/build_sample_features.py"
+
+
+rule transitional_summary_figure:
+    input:
+        table="results/transitional_states/transitional_state_table.csv",
+        summary="results/transitional_states/transitional_summary.csv",
+        mean_scores="results/transitional_states/mean_program_scores_by_state.csv",
+        sample_features="results/sample_level/sample_features.csv",
+        script="scripts/make_transitional_summary_figure.py"
+    output:
+        png="results/transitional_states/transitional_summary_figure.png",
+        pdf="results/transitional_states/transitional_summary_figure.pdf"
+    shell:
+        "python scripts/make_transitional_summary_figure.py"
