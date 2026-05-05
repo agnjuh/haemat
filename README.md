@@ -120,13 +120,7 @@ The results show that:
 
 ## Reproducibility
 
-The full workflow is implemented in Snakemake:
-
-```bash
-snakemake --cores 4
-```
-
----
+The full workflow is implemented in Snakemake.
 
 ## Repository Structure
 
