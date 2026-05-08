@@ -1,130 +1,166 @@
-# HAEMAT: Cross-dataset immune cell classification and ambiguity analysis
-_A framework for uncertainty-aware analysis of immune cell states and diagnostic patterns_
+# HAEMAT: Cross-dataset immune cell classification and identity displacement analysis
+_A framework for uncertainty-aware modelling of immune cell identity structure in single-cell transcriptomics_
 
-This repository implements an interpretable machine learning framework for cell type classification in single-cell RNA-seq (scRNA-seq) data, with a focus on cross-dataset generalisation and uncertainty-aware analysis.
+This repository implements an interpretable machine learning and regulatory analysis framework for immune cell identity analysis in single-cell RNA-seq (scRNA-seq) data.
 
-The workflow is designed to evaluate how well a model trained on one PBMC dataset transfers to another independent dataset, while explicitly analysing prediction uncertainty and systematic failure modes.
+The project began as a cross-dataset PBMC classification framework and developed into a broader investigation of transcriptional ambiguity, transitional immune states, and structured identity displacement across immune populations. The workflow integrates probabilistic classification, transcriptional program analysis, regulatory enrichment, and chromatin accessibility overlap analysis to characterise how immune cell identities shift across related cellular states.
 
----
-
-## Data
-
-- Training dataset: PBMC 5k (10x Genomics)
-- External validation dataset: PBMC 10k (10x Genomics)
-
-Cell identities in the validation dataset are treated as **proxy labels**.  
-These labels are used as a reference for evaluation but are not assumed to be perfectly accurate ground truth.
+HAEMAT treats prediction uncertainty as biologically meaningful structure that may reflect overlapping lineage programs, intermediate immune states, or unstable transcriptional configurations. In this framework, ambiguous predictions are analysed as potential indicators of dynamic immune identity organisation, including cytotoxic, myeloid, dendritic, and platelet-associated transcriptional programs that partially overlap across cells and datasets.
 
 ---
 
-## Methods
+# Overview
+
+The workflow combines:
+
+- interpretable machine learning
+- uncertainty-aware prediction analysis
+- hierarchical lineage modelling
+- transcriptional program scoring
+- identity displacement analysis
+- exploratory regulatory analysis
+- TF enrichment and network analysis
+- chromatin accessibility integration using ENCODE ATAC-seq datasets
+
+The framework analyses how immune cell identities shift, overlap, and transition across datasets and transcriptional states.
+
+---
+
+# Data
+
+Training dataset:
+
+- PBMC 5k (10x Genomics)
+
+External validation dataset:
+
+- PBMC 10k (10x Genomics)
+
+Proxy labels from PBMC10k are used for evaluation, but are not assumed to represent perfect biological ground truth.
+
+---
+
+# Methods
 
 The pipeline includes:
 
 - Logistic regression classifier (L1-regularised)
-- Marker-informed feature space
-- Cross-dataset evaluation (train on PBMC5k → test on PBMC10k)
-- Uncertainty quantification:
-  - Entropy
-  - Top-2 probability gap
-- Post hoc decision layer
-- Benchmark comparison with CellTypist
-- Gene-level interpretability (L1 coefficients)
+- k-nearest neighbours
+- random forest classifier
+- hierarchical lineage-aware classification
+- entropy-based uncertainty analysis
+- top-2 probability gap analysis
+- post hoc decision layer
+- benchmark comparison with CellTypist
+- marker-informed feature space
+- transcriptional program scoring
+- identity displacement modelling
+- TF enrichment analysis
+- TF-axis network construction
+- promoter-level ATAC accessibility overlap analysis
 
 ---
 
-## Summary figure
+# Summary figure
 
-![Summary](figures/HAEMAT_summary_figure.png)
-
----
-
-## Key results
-
-### 1. Classification agreement by cell type
-
-Agreement between HAEMAT predictions and proxy labels:
-
-| Cell type | Agreement rate |
-|----------|----------------|
-| B        | 0.985 |
-| DC       | 0.895 |
-| Mono     | 0.972 |
-| NK       | 0.585 |
-| Platelet | 0.844 |
-| T        | 0.993 |
-
-Performance is high for most lineages, while NK cells show substantially lower agreement.
+![Summary](results/summary_figure/HAEMAT_summary_figure.png)
 
 ---
 
-### 2. NK cell misclassification patterns
+# Transitional identity framework
 
-True NK cells are distributed across multiple predicted classes:
+A major focus of HAEMAT is the analysis of ambiguous and transitional immune cell states.
 
-- NK → NK: 551  
-- NK → Platelet: 609  
-- NK → Monocyte: 383  
-- NK → T: 59  
+The workflow identifies cells with unstable transcriptional identity profiles using:
 
-This indicates a systematic ambiguity between NK cells and other immune populations, particularly platelets and monocytes.
+- prediction entropy
+- probability structure
+- lineage-aware ambiguity
+- program-level transcriptional scoring
 
-A similar pattern is observed in CellTypist, suggesting that this reflects biological or representation-level overlap rather than a model-specific issue.
-
----
-
-### 3. Comparison with CellTypist
-
-Both HAEMAT and CellTypist show:
-
-- Strong performance for B cells, T cells, and monocytes
-- Reduced agreement for NK cells
-
-The consistency of these patterns across models indicates that the main limitations arise from dataset characteristics rather than implementation details.
+This allows the construction of structured transitional identity landscapes rather than binary correct/incorrect classifications.
 
 ---
 
-### 4. Uncertainty under dataset shift
+# Identity displacement analysis
 
-Prediction entropy differs between correct and incorrect predictions:
+The framework models identity displacement between dominant and secondary predicted identities.
 
-- Correct predictions are concentrated at low entropy
-- Incorrect predictions show broader and higher entropy distribution
+High-displacement cells were found to cluster into several major transcriptional axes:
 
-This demonstrates that uncertainty metrics provide meaningful signals of prediction reliability under domain shift.
+| Axis | Representative genes |
+|---|---|
+| Cytotoxic T / NK | NKG7, GNLY, PRF1, GZMB, CCL5 |
+| Myeloid / dendritic | LYZ, TYROBP, FCER1A, CLEC10A, IRF8 |
+| Platelet-associated immune | PF4, PPBP, GP9, S100A8, S100A9 |
 
----
-
-### 5. Gene-level interpretability
-
-The model identifies biologically meaningful marker genes:
-
-- B cells: MS4A1, BANK1, CD79A  
-- Dendritic cells: FCER1A, CLEC10A, CD1C  
-- Monocytes: S100A8, AIF1  
-
-This confirms that the classifier captures lineage-specific transcriptional programs.
+These states are interpreted as structured immune identity programs rather than isolated misclassification events.
 
 ---
 
-## Interpretation
+# Regulatory integration
 
-The results show that:
+The repository includes exploratory regulatory analyses integrating ENCODE chromatin accessibility datasets.
 
-- Cell type classification generalises well across datasets for major lineages
-- NK cells represent a consistent failure mode across independent models
-- Prediction uncertainty correlates with classification correctness
-- Interpretable models retain biologically relevant signal under domain shift
+Analyses include:
+
+- promoter interval generation
+- overlap with immune ATAC-seq peak datasets
+- TF enrichment analysis
+- TF-axis regulatory network construction
+
+Accessible chromatin overlaps support the biological coherence of several identity-displacement axes.
+
+Examples include:
+
+- cytotoxic axis overlap with NK and CD8 T ATAC profiles
+- dendritic accessibility enrichment in the myeloid/DC axis
+- platelet-associated accessibility patterns partially overlapping immune regulatory states
 
 ---
 
-## Reproducibility
+# TF-axis regulatory heatmap
 
-The full workflow is implemented in Snakemake.
+![TF heatmap](results/regulatory/tf_network/tf_axis_heatmap.png)
 
-## Repository Structure
+---
 
-```
+# TF-axis regulatory network
+
+![TF network](results/regulatory/tf_network/tf_axis_network_clean3.png)
+
+---
+
+# Key observations
+
+The analyses suggest that:
+
+- immune classification uncertainty is highly structured
+- ambiguity concentrates along biologically meaningful transcriptional axes
+- NK-associated ambiguity represents a major recurrent instability pattern
+- platelet-associated transcriptional programs partially overlap immune regulatory states
+- uncertainty metrics capture biologically informative transitional states
+- regulatory programs partially support identity-displacement structure
+
+---
+
+# Interpretation
+
+HAEMAT frames classification disagreement and prediction uncertainty as interpretable biological structure rather than purely technical failure.
+
+The framework suggests that transitional immune identities can be represented as:
+
+- probabilistic transcriptional states
+- lineage-displacement trajectories
+- partially overlapping regulatory programs
+
+This creates a bridge between interpretable machine learning and immune cell state biology.
+
+---
+
+# Repository structure
+
+```text
 workflow/
     Snakefile
 
@@ -132,28 +168,63 @@ scripts/
     run_pipeline.py
     cross_dataset.py
     decision_layer.py
-    analyze_thresholds_per_class.py
-    plot_benchmark_comparison.py
     hierarchical_models.py
+    program_scoring.py
+    transitional_state_detection.py
+    compute_identity_displacement.py
+    summarize_displacement_axes.py
+    axis_program_analysis.py
+    tf_enrichment_axes.py
+    plot_tf_axis_heatmap.py
 
+config/
+data/
 results/
-    benchmark_plots/
-    cross_dataset/
-    hierarchical/
 ```
 
 ---
 
-## Scope and future direction
+# Main outputs
 
-This repository focuses on rigorous evaluation and interpretability of PBMC cell type classification under dataset shift. Rather than treating classification errors only as technical failures, the analysis uses disagreement, uncertainty, and cell-type ambiguity as signals that may reveal biologically meaningful structure.
+The workflow generates:
 
-A key future direction is to extend this framework to disease-associated PBMC datasets and ask:
+- confusion matrices
+- calibration curves
+- uncertainty summaries
+- transitional state plots
+- displacement matrices
+- program heatmaps
+- TF-axis heatmaps
+- TF regulatory network figures
+- chromatin accessibility overlap summaries
 
-- whether immune cell composition differs systematically between disease groups
-- whether ambiguous or transitional cell states are enriched in specific conditions
-- whether uncertainty-aware cell type profiles can improve predictive modelling
-- whether cytotoxic, myeloid, or platelet-associated signatures contribute to disease stratification
+---
 
-In this sense, HAEMAT is intended as a foundation for interpretable immune profiling, where classification outputs are not only labels, but structured features for downstream biological and predictive analysis.
+# Technologies
 
+- Python
+- Scanpy
+- scikit-learn
+- pandas
+- matplotlib
+- seaborn
+- Snakemake
+- bedtools
+- ENCODE datasets
+
+---
+
+# Scope and future direction
+
+This repository focuses on uncertainty-aware modelling of immune cell identity structure in PBMC datasets.
+
+Future directions include:
+
+- integration with disease-associated PBMC cohorts
+- matched multiome analysis
+- trajectory-aware modelling
+- perturbation-aware immune state analysis
+- regulatory state inference
+- patient-level immune state profiling
+
+The long-term goal is to develop interpretable frameworks that model immune identity as a probabilistic and dynamic transcriptional landscape rather than a fixed categorical label.

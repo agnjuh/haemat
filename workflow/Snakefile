@@ -101,8 +101,266 @@ rule all:
 
         # transitional summary figure
         "results/transitional_states/transitional_summary_figure.png",
-        "results/transitional_states/transitional_summary_figure.pdf"
+        "results/transitional_states/transitional_summary_figure.pdf",
 
+        # identity dynamics
+        "results/dynamics/identity_dynamics_table.csv",
+        "results/dynamics/classification_neighbour_matrix.csv",
+        "results/dynamics/classification_neighbour_heatmap.png",
+        "results/dynamics/stability_landscape.png",
+        "results/dynamics/ambiguous_neighbour_matrix.csv",
+        "results/dynamics/ambiguous_neighbour_matrix_filtered_clean.csv",
+        "results/dynamics/identity_neighbourhood_graph.png",
+        "results/dynamics/identity_neighbourhood_graph.pdf",
+
+        # identity displacement
+        "results/dynamics/identity_displacement.csv",
+        "results/dynamics/displacement_matrix.png",
+        "results/dynamics/displacement_graph.png",
+        "results/dynamics/NK_to_platelet_distribution.png",
+
+        # high-displacement analysis
+        "results/dynamics/high_displacement_pair_counts.csv",
+        "results/dynamics/high_displacement_pair_summary.csv",
+        "results/dynamics/high_displacement_count_matrix.csv",
+        "results/dynamics/high_displacement_mean_matrix.csv",
+        "results/dynamics/high_displacement_count_matrix.png",
+        "results/dynamics/high_displacement_mean_matrix.png",
+        "results/dynamics/high_displacement_axis_summary.csv",
+        "results/dynamics/high_displacement_axis_counts.png",
+        "results/dynamics/high_displacement_axis_mean.png",
+
+        # axis program analysis
+        "results/dynamics/axis_program_means.csv",
+        "results/dynamics/axis_program_heatmap.png",
+
+        # regulatory promoter mapping
+        "results/regulatory/axis_promoters.bed",
+        "results/regulatory/axis_promoters_with_axis.bed",
+
+        # TF enrichment and heatmap only
+        "results/regulatory/tf_enrichment/tf_enrichment_all_axes.csv",
+        "results/regulatory/tf_enrichment/tf_enrichment_top10.csv",
+        "results/regulatory/tf_network/tf_axis_edges.csv",
+        "results/regulatory/tf_network/tf_axis_heatmap.png",
+        "results/regulatory/tf_network/tf_axis_heatmap.pdf",
+        "results/regulatory/tf_network/tf_axis_heatmap_values.csv"
+
+
+
+# Main PBMC ML pipeline
+
+rule pbmc_ml_pipeline:
+    input:
+        data="data/5k_pbmc_10x.h5ad",
+        markers="markers_curated.csv",
+        script="scripts/run_pipeline.py"
+    output:
+        "results/metrics_summary.csv",
+        "results/class_distribution.csv",
+        "results/hvg_genes_train_only.csv",
+        "results/confusion_knn.png",
+        "results/confusion_logreg.png",
+        "results/confusion_rf.png",
+        "results/report_knn.txt",
+        "results/report_logreg.txt",
+        "results/report_rf.txt",
+        "results/top_genes_summary.csv",
+        "results/coverage_accuracy.png",
+        "results/calibration_curve.png",
+        "results/calibration_stats.txt",
+        "results/proba.npy",
+        "results/y_test.npy",
+        "results/classes.npy",
+        "results/top_genes_summary_geneLR.csv",
+        "results/top_genes_annotated.csv",
+        "results/annotated_marker_table.xlsx",
+        "results/top5_union_heatmap.csv",
+        "results/plots/top5_union_heatmap.png",
+        "results/plots/top5_union_heatmap.pdf"
+    shell:
+        "python scripts/run_pipeline.py"
+
+
+rule prepare_pbmc3k:
+    input:
+        "data/filtered_gene_bc_matrices/hg19/matrix.mtx"
+    output:
+        "data/pbmc3k.h5ad"
+    shell:
+        "python scripts/prepare_pbmc3k.py"
+
+
+rule prepare_pbmc10k:
+    input:
+        "data/external_pbmc/filtered_feature_bc_matrix/matrix.mtx.gz"
+    output:
+        "data/pbmc10k.h5ad"
+    shell:
+        "python scripts/prepare_pbmc10k.py"
+
+
+
+# Cross-dataset validation
+
+rule cross_dataset_logreg:
+    input:
+        train="data/5k_pbmc_10x.h5ad",
+        test="data/pbmc10k.h5ad",
+        markers="markers_curated.csv",
+        script="scripts/cross_dataset.py",
+        utils="scripts/pbmc_utils.py"
+    output:
+        "results/cross_dataset/metrics_cross_logreg.csv",
+        "results/cross_dataset/report_cross_logreg.txt",
+        "results/cross_dataset/confusion_cross_logreg.png",
+        "results/cross_dataset/hvg_genes_cross_dataset.csv",
+        "results/cross_dataset/proba.npy",
+        "results/cross_dataset/y_test.npy",
+        "results/cross_dataset/classes.npy"
+    shell:
+        "python scripts/cross_dataset.py"
+
+
+rule per_class_thresholds:
+    input:
+        proba="results/cross_dataset/proba.npy",
+        y_test="results/cross_dataset/y_test.npy",
+        classes="results/cross_dataset/classes.npy",
+        script="scripts/analyze_thresholds_per_class.py"
+    output:
+        "results/cross_dataset/per_class_thresholds.csv",
+        "results/cross_dataset/per_class_pr_curves.csv",
+        "results/cross_dataset/accepted_confusion_matrix_per_class.csv",
+        "results/cross_dataset/summary_per_class.txt"
+    shell:
+        "python scripts/analyze_thresholds_per_class.py --outdir results/cross_dataset --precision-target 0.95"
+
+
+rule decision_layer:
+    input:
+        proba="results/cross_dataset/proba.npy",
+        y_test="results/cross_dataset/y_test.npy",
+        classes="results/cross_dataset/classes.npy",
+        thresholds="results/cross_dataset/per_class_thresholds.csv",
+        script="scripts/decision_layer.py"
+    output:
+        "results/cross_dataset/decision_table.csv",
+        "results/cross_dataset/decision_summary.txt"
+    shell:
+        "python scripts/decision_layer.py"
+
+
+rule lineage_thresholds:
+    input:
+        proba="results/cross_dataset/proba.npy",
+        y_test="results/cross_dataset/y_test.npy",
+        classes="results/cross_dataset/classes.npy",
+        script="scripts/lineage_thresholds.py"
+    output:
+        "results/cross_dataset/lineage_pr_curves.csv",
+        "results/cross_dataset/lineage_thresholds.csv",
+        "results/cross_dataset/lineage_decision_table.csv",
+        "results/cross_dataset/lineage_decision_summary.txt"
+    shell:
+        "python scripts/lineage_thresholds.py"
+
+
+rule hierarchical_models:
+    input:
+        train="data/5k_pbmc_10x.h5ad",
+        test="data/pbmc10k.h5ad",
+        markers="markers_curated.csv",
+        script="scripts/hierarchical_models.py",
+        utils="scripts/pbmc_utils.py"
+    output:
+        "results/hierarchical/lineage_model_report.txt",
+        "results/hierarchical/hierarchical_celltype_report.txt",
+        "results/hierarchical/within_lineage_model_summary.csv",
+        "results/hierarchical/hierarchical_predictions.csv",
+        "results/hierarchical/confusion_lineage_model.png",
+        "results/hierarchical/confusion_hierarchical_celltype.png"
+    shell:
+        "python scripts/hierarchical_models.py"
+
+
+
+# CellTypist benchmark
+
+rule benchmark_celltypist_pbmc10k:
+    input:
+        data="data/pbmc10k.h5ad",
+        script="scripts/benchmark_celltypist_pbmc10k.py"
+    output:
+        labels="results/celltypist_pbmc10k_labels.csv",
+        mapped="results/celltypist_pbmc10k_mapped.csv"
+    shell:
+        """
+        python scripts/benchmark_celltypist_pbmc10k.py
+
+        python - << 'PY'
+import pandas as pd
+
+df = pd.read_csv("results/celltypist_pbmc10k_labels.csv")
+
+def map_label(x):
+    x = str(x).lower()
+    if "b cell" in x or "plasma" in x:
+        return "B"
+    if "nk" in x:
+        return "NK"
+    if "t cell" in x or "mait" in x or "regulatory t" in x:
+        return "T"
+    if "mono" in x:
+        return "Mono"
+    if x.startswith("dc") or "dendritic" in x or "pdc" in x:
+        return "DC"
+    if "platelet" in x or "megakaryocyte" in x:
+        return "Platelet"
+    return "Unknown"
+
+df["mapped"] = df["celltypist_label"].apply(map_label)
+df.to_csv("results/celltypist_pbmc10k_mapped.csv", index=False)
+PY
+        """
+
+
+rule plot_benchmark_comparison:
+    input:
+        decision="results/cross_dataset/decision_table.csv",
+        celltypist="results/celltypist_pbmc10k_mapped.csv",
+        script="scripts/plot_benchmark_comparison.py"
+    output:
+        "results/benchmark_plots/confusion_HAEMAT_vs_proxy.png",
+        "results/benchmark_plots/confusion_celltypist_vs_proxy.png",
+        "results/benchmark_plots/agreement_by_proxy_class.csv",
+        "results/benchmark_plots/agreement_by_proxy_class.png",
+        "results/benchmark_plots/nk_failure_distribution.csv",
+        "results/benchmark_plots/nk_failure_comparison.png",
+        "results/benchmark_plots/entropy_correct_vs_incorrect.png",
+        "results/benchmark_plots/top2_gap_correct_vs_incorrect.png"
+    shell:
+        "python scripts/plot_benchmark_comparison.py"
+
+
+rule summary_figure:
+    input:
+        "results/benchmark_plots/confusion_HAEMAT_vs_proxy.png",
+        "results/benchmark_plots/confusion_celltypist_vs_proxy.png",
+        "results/benchmark_plots/agreement_by_proxy_class.png",
+        "results/benchmark_plots/nk_failure_comparison.png",
+        "results/benchmark_plots/entropy_correct_vs_incorrect.png",
+        "results/plots/top5_union_heatmap.png",
+        script="scripts/make_summary_figure.py"
+    output:
+        "results/summary_figure/HAEMAT_summary_figure.png",
+        "results/summary_figure/HAEMAT_summary_figure.pdf"
+    shell:
+        "python scripts/make_summary_figure.py"
+
+
+
+# Program scores and transitional states
 
 rule program_scoring:
     input:
@@ -175,3 +433,365 @@ rule transitional_summary_figure:
         pdf="results/transitional_states/transitional_summary_figure.pdf"
     shell:
         "python scripts/make_transitional_summary_figure.py"
+
+
+
+# Identity dynamics
+
+rule identity_dynamics:
+    input:
+        decision="results/cross_dataset/decision_table.csv",
+        proba="results/cross_dataset/proba.npy",
+        classes="results/cross_dataset/classes.npy",
+        script="scripts/compute_identity_dynamics.py"
+    output:
+        table="results/dynamics/identity_dynamics_table.csv",
+        matrix="results/dynamics/classification_neighbour_matrix.csv"
+    shell:
+        """
+        python scripts/compute_identity_dynamics.py
+        if [ -f results/dynamics/transition_matrix.csv ]; then
+            mv results/dynamics/transition_matrix.csv results/dynamics/classification_neighbour_matrix.csv
+        fi
+        """
+
+
+rule plot_identity_dynamics:
+    input:
+        table="results/dynamics/identity_dynamics_table.csv",
+        matrix="results/dynamics/classification_neighbour_matrix.csv",
+        script="scripts/plot_identity_dynamics.py"
+    output:
+        heatmap="results/dynamics/classification_neighbour_heatmap.png",
+        stability="results/dynamics/stability_landscape.png"
+    shell:
+        """
+        cp results/dynamics/classification_neighbour_matrix.csv results/dynamics/transition_matrix.csv
+        python scripts/plot_identity_dynamics.py
+        if [ -f results/dynamics/transition_matrix.png ]; then
+            mv results/dynamics/transition_matrix.png results/dynamics/classification_neighbour_heatmap.png
+        fi
+        """
+
+
+rule ambiguous_neighbour_filter:
+    input:
+        table="results/dynamics/identity_dynamics_table.csv"
+    output:
+        counts="results/dynamics/ambiguous_neighbour_counts.csv",
+        matrix="results/dynamics/ambiguous_neighbour_matrix.csv",
+        filtered="results/dynamics/ambiguous_neighbour_matrix_filtered.csv",
+        clean="results/dynamics/ambiguous_neighbour_matrix_filtered_clean.csv"
+    shell:
+        """
+        python - << 'PY'
+import pandas as pd
+
+df = pd.read_csv("results/dynamics/identity_dynamics_table.csv")
+
+sub = df[(df["top2_gap"] < 0.2) | (df["entropy_normalized"] > 0.3)].copy()
+
+counts = pd.crosstab(sub["top1_class"], sub["second_class"])
+matrix = counts.div(counts.sum(axis=1), axis=0)
+
+counts.to_csv("results/dynamics/ambiguous_neighbour_counts.csv")
+matrix.to_csv("results/dynamics/ambiguous_neighbour_matrix.csv")
+
+filtered = matrix.copy()
+
+if "Platelet" in filtered.columns:
+    filtered["Platelet"] = 0
+
+if "Platelet" in filtered.index:
+    filtered.loc["Platelet"] = 0
+
+filtered = filtered.div(filtered.sum(axis=1), axis=0)
+filtered.to_csv("results/dynamics/ambiguous_neighbour_matrix_filtered.csv")
+
+clean = filtered.fillna(0)
+clean = clean.loc[(clean.sum(axis=1) > 0), (clean.sum(axis=0) > 0)]
+clean.to_csv("results/dynamics/ambiguous_neighbour_matrix_filtered_clean.csv")
+PY
+        """
+
+
+rule identity_graph:
+    input:
+        matrix="results/dynamics/ambiguous_neighbour_matrix_filtered_clean.csv",
+        script="scripts/plot_identity_graph.py"
+    output:
+        png="results/dynamics/identity_neighbourhood_graph.png",
+        pdf="results/dynamics/identity_neighbourhood_graph.pdf"
+    shell:
+        "python scripts/plot_identity_graph.py"
+
+
+
+# Identity displacement
+
+rule identity_displacement:
+    input:
+        proba="results/cross_dataset/proba.npy",
+        classes="results/cross_dataset/classes.npy",
+        script="scripts/compute_identity_displacement.py"
+    output:
+        "results/dynamics/identity_displacement.csv"
+    shell:
+        "python scripts/compute_identity_displacement.py"
+
+
+rule displacement_matrix:
+    input:
+        displacement="results/dynamics/identity_displacement.csv",
+        script="scripts/plot_displacement_matrix.py"
+    output:
+        "results/dynamics/displacement_matrix.png"
+    shell:
+        "python scripts/plot_displacement_matrix.py"
+
+
+rule displacement_graph:
+    input:
+        displacement="results/dynamics/identity_displacement.csv",
+        script="scripts/plot_displacement_graph.py"
+    output:
+        "results/dynamics/displacement_graph.png"
+    shell:
+        "python scripts/plot_displacement_graph.py"
+
+
+rule displacement_distribution:
+    input:
+        displacement="results/dynamics/identity_displacement.csv",
+        script="scripts/plot_displacement_distribution.py"
+    output:
+        "results/dynamics/NK_to_platelet_distribution.png"
+    shell:
+        "python scripts/plot_displacement_distribution.py"
+
+
+rule high_displacement:
+    input:
+        displacement="results/dynamics/identity_displacement.csv",
+        script="scripts/analyze_high_displacement.py"
+    output:
+        "results/dynamics/high_displacement_pair_counts.csv",
+        "results/dynamics/high_displacement_pair_summary.csv",
+        "results/dynamics/high_displacement_count_matrix.csv",
+        "results/dynamics/high_displacement_mean_matrix.csv",
+        "results/dynamics/high_displacement_count_matrix.png",
+        "results/dynamics/high_displacement_mean_matrix.png"
+    shell:
+        "python scripts/analyze_high_displacement.py"
+
+
+rule summarize_displacement_axes:
+    input:
+        displacement="results/dynamics/identity_displacement.csv",
+        script="scripts/summarize_displacement_axes.py"
+    output:
+        "results/dynamics/high_displacement_axis_summary.csv",
+        "results/dynamics/high_displacement_axis_counts.png",
+        "results/dynamics/high_displacement_axis_mean.png"
+    shell:
+        "python scripts/summarize_displacement_axes.py"
+
+
+rule axis_program_analysis:
+    input:
+        displacement="results/dynamics/identity_displacement.csv",
+        programs="results/program_scores/program_scores.csv",
+        script="scripts/axis_program_analysis.py"
+    output:
+        "results/dynamics/axis_program_means.csv"
+    shell:
+        "python scripts/axis_program_analysis.py"
+
+
+rule axis_program_heatmap:
+    input:
+        means="results/dynamics/axis_program_means.csv",
+        script="scripts/plot_axis_program_heatmap.py"
+    output:
+        "results/dynamics/axis_program_heatmap.png"
+    shell:
+        "python scripts/plot_axis_program_heatmap.py"
+
+
+
+# Regulatory promoter mapping
+
+rule make_axis_promoters:
+    input:
+        gtf="data/reference/gencode.gtf",
+        genes="config/axis_gene_sets.tsv",
+        script="scripts/make_axis_promoters.py"
+    output:
+        "results/regulatory/axis_promoters.bed"
+    shell:
+        "python scripts/make_axis_promoters.py"
+
+
+rule axis_promoters_with_axis:
+    input:
+        bed="results/regulatory/axis_promoters.bed",
+        genes="config/axis_gene_sets.tsv"
+    output:
+        "results/regulatory/axis_promoters_with_axis.bed"
+    shell:
+        """
+        python - << 'PY'
+import pandas as pd
+
+genes = pd.read_csv("config/axis_gene_sets.tsv", sep="\\t")
+
+bed = pd.read_csv(
+    "results/regulatory/axis_promoters.bed",
+    sep="\\t",
+    header=None,
+    names=["chr", "start", "end", "gene"]
+)
+
+merged = bed.merge(genes, on="gene", how="left")
+merged = merged[["chr", "start", "end", "axis", "gene"]]
+
+merged.to_csv(
+    "results/regulatory/axis_promoters_with_axis.bed",
+    sep="\\t",
+    header=False,
+    index=False
+)
+PY
+        """
+
+
+
+# TF enrichment and TF heatmap
+# No TF network plot is included in rule all.
+
+rule tf_enrichment_axes:
+    input:
+        genes="config/axis_gene_sets.tsv",
+        script="scripts/tf_enrichment_axes.py"
+    output:
+        all="results/regulatory/tf_enrichment/tf_enrichment_all_axes.csv",
+        top10="results/regulatory/tf_enrichment/tf_enrichment_top10.csv"
+    shell:
+        "python scripts/tf_enrichment_axes.py"
+
+
+rule tf_axis_edges:
+    input:
+        enrichment="results/regulatory/tf_enrichment/tf_enrichment_all_axes.csv"
+    output:
+        "results/regulatory/tf_network/tf_axis_edges.csv"
+    shell:
+        """
+        mkdir -p results/regulatory/tf_network
+
+        python - << 'PY'
+import os
+import pandas as pd
+
+INFILE = "results/regulatory/tf_enrichment/tf_enrichment_all_axes.csv"
+OUT = "results/regulatory/tf_network/tf_axis_edges.csv"
+
+df = pd.read_csv(INFILE)
+
+df = df[df["P-value"] <= 0.05].copy()
+
+def extract_tf(term):
+    return str(term).split()[0]
+
+df["TF"] = df["Term"].apply(extract_tf)
+
+exclude = {
+    "CTCF", "OCT4", "EZH2", "MAX", "NFYB", "REST", "CBX3",
+    "eGFP-FOS", "ERA"
+}
+
+priority_tfs = {
+    "SPI1", "PU.1", "IRF1", "IRF8", "STAT4", "STAT5A",
+    "RELA", "RUNX1", "GATA2", "GATA3", "FLI1",
+    "LMO2", "LYL1", "MECOM", "CEBPB", "NR1H3", "PPARG",
+    "BACH1", "MEIS1", "SCL", "ETS1"
+}
+
+df = df[~df["TF"].isin(exclude)].copy()
+df = df[df["TF"].isin(priority_tfs)].copy()
+
+edges = (
+    df.groupby(["axis", "TF"])
+      .agg(
+          min_p=("P-value", "min"),
+          min_adj_p=("Adjusted P-value", "min"),
+          max_combined_score=("Combined Score", "max"),
+          libraries=("library", lambda x: ";".join(sorted(set(x)))),
+          terms=("Term", lambda x: " | ".join(sorted(set(map(str, x)))[:3])),
+          genes=("Genes", lambda x: ";".join(sorted(set(";".join(map(str, x)).split(";")))))
+      )
+      .reset_index()
+)
+
+edges = edges.sort_values(
+    ["axis", "min_p", "max_combined_score"],
+    ascending=[True, True, False]
+)
+
+edges.to_csv(OUT, index=False)
+PY
+        """
+
+
+rule tf_axis_heatmap:
+    input:
+        edges="results/regulatory/tf_network/tf_axis_edges.csv",
+        script="scripts/plot_tf_axis_heatmap.py"
+    output:
+        png="results/regulatory/tf_network/tf_axis_heatmap.png",
+        pdf="results/regulatory/tf_network/tf_axis_heatmap.pdf",
+        values="results/regulatory/tf_network/tf_axis_heatmap_values.csv"
+    shell:
+        "python scripts/plot_tf_axis_heatmap.py"
+
+
+
+# Optional online ENCODE search
+# Not included in rule all.
+
+rule search_encode_atac:
+    input:
+        script="scripts/search_encode_atac.py"
+    output:
+        all="data/regulatory/encode_search/all_encode_atac_peak_files.csv",
+        filtered="data/regulatory/encode_search/filtered_immune_atac_peak_files.csv"
+    shell:
+        "python scripts/search_encode_atac.py"
+
+
+
+# Optional stress-test targets
+# Not included in rule all unless explicitly requested.
+
+rule marker_robustness:
+    input:
+        markers="markers_curated.csv",
+        script="scripts/marker_robustness.py",
+        cross_script="scripts/cross_dataset.py",
+        decision_script="scripts/decision_layer.py"
+    output:
+        "results/robustness/marker_robustness.csv"
+    shell:
+        "python scripts/marker_robustness.py"
+
+
+rule marker_structured_robustness:
+    input:
+        markers="markers_curated.csv",
+        script="scripts/marker_structured_robustness.py",
+        cross_script="scripts/cross_dataset.py",
+        decision_script="scripts/decision_layer.py"
+    output:
+        "results/robustness/marker_structured_robustness.csv"
+    shell:
+        "python scripts/marker_structured_robustness.py"
