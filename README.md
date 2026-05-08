@@ -220,4 +220,4 @@ Future directions include:
 - regulatory state inference
 - patient-level immune state profiling
 
-The long-term goal is to develop interpretable frameworks that model immune identity as a probabilistic and dynamic transcriptional landscape rather than a fixed categorical label.
+The long-term goal is to develop interpretable frameworks that model immune identity as a probabilistic and dynamic transcriptional landscape.
