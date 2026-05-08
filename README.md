@@ -63,7 +63,7 @@ The pipeline includes:
 
 # Summary figure
 
-![Summary](results/summary_figure/HAEMAT_summary_figure.png)
+![Summary](figures/HAEMAT_summary_figure.png)
 
 ---
 
@@ -120,14 +120,7 @@ Examples include:
 ---
 
 # TF-axis regulatory heatmap
-
-![TF heatmap](results/regulatory/tf_network/tf_axis_heatmap.png)
-
----
-
-# TF-axis regulatory network
-
-![TF network](results/regulatory/tf_network/tf_axis_network_clean3.png)
+![TF heatmap](figures/tf_axis_heatmap.png)
 
 ---
 
