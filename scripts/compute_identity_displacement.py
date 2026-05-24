@@ -25,7 +25,7 @@ for i in range(proba.shape[0]):
     p2 = p[idx[1]]
 
     gap = p1 - p2
-    displacement_strength = 1 - gap  # small gap = strong displacement
+    displacement_strength = 1 - gap
 
     rows.append({
         "top1": top1,

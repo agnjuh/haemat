@@ -130,6 +130,11 @@ rule all:
         "results/dynamics/high_displacement_axis_counts.png",
         "results/dynamics/high_displacement_axis_mean.png",
 
+        # artifact-aware uncertainty QC
+        "results/qc/artifact_flags.csv",
+        "results/qc/artifact_summary.csv",
+        "results/qc/uncertain_artifact_pair_summary.csv",
+
         # axis program analysis
         "results/dynamics/axis_program_means.csv",
         "results/dynamics/axis_program_heatmap.png",
@@ -595,6 +600,21 @@ rule summarize_displacement_axes:
         "results/dynamics/high_displacement_axis_mean.png"
     shell:
         "python scripts/summarize_displacement_axes.py"
+
+
+rule artifact_detection:
+    input:
+        data="data/pbmc10k.h5ad",
+        decision="results/cross_dataset/decision_table.csv",
+        programs="results/program_scores/program_scores.csv",
+        displacement="results/dynamics/identity_displacement.csv",
+        script="scripts/artifact_detection.py"
+    output:
+        flags="results/qc/artifact_flags.csv",
+        summary="results/qc/artifact_summary.csv",
+        pairs="results/qc/uncertain_artifact_pair_summary.csv"
+    shell:
+        "python scripts/artifact_detection.py"
 
 
 rule axis_program_analysis:
